@@ -43,6 +43,13 @@
 sysinfo.txt
 Crashlytics/
 
+# --- Secret API Keys (DO NOT REMOVE) ---
+/[Aa]ssets/SecretSettings.asset
+/[Aa]ssets/SecretSettings.asset.meta
+/[Aa]ssets/**/SecretSettings.asset
+/[Aa]ssets/**/SecretSettings.asset.meta
+
+
 # --- Mobile specific ---
 *.apk
 *.aab

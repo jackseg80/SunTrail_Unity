@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3752ddc1216e5314893afb4468d8db62, type: 3}
+  m_Name: NewGlobalState
+  m_EditorClassIdentifier: Assembly-CSharp::SunTrail.Core.StateSo
+  energySaver: 0
+  mapSource: swisstopo
+  performancePreset: 1
+  currentSettings:
+    resolution: 0
+    range: 0
+    shadows: 0
+    shadowRes: 0
+    pixelRatioLimit: 0
+    showVegetation: 0
+    showSignposts: 0
+    showBuildings: 0
+    buildingsShadows: 0
+    maxAllowedZoom: 0
+    vegetationDensity: 0
+    buildingBatchSize: 0
+    maxBuildsPerCycle: 0
+    loadDelayFactor: 0
+    showWeather: 0
+    weatherDensity: 0
+    weatherSpeed: 0
+    fogFar: 0
+  showTrails: 0
+  showSlopes: 0
+  showDebug: 1
+  targetLat: 46.6863
+  targetLon: 7.6617
+  initialLat: 46.6863
+  initialLon: 7.6617
+  zoom: 12
+  reliefExaggeration: 1.4
+  isFollowingTrail: 0
+  isFollowingUser: 0
+  isOffline: 0
