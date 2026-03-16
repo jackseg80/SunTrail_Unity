@@ -1,79 +1,56 @@
-# 🛰️ SunTrail 3D - Manifeste de Transition Technique (v4.8.5)
+# 🛰️ SunTrail Unity - Manifeste Technique (v1.0)
 
-Ce document sert de spécification technique exhaustive pour la migration du moteur SunTrail de Three.js (Web) vers Unity + Cesium (Natif).
+Ce document définit les spécifications techniques et les algorithmes portés de SunTrail Three.js vers Unity + Cesium.
 
 ---
 
-## 1. Algorithmes Fondamentaux
+## 1. Principes Fondamentaux de Migration
 
-### A. Décodage de l'élévation (Terrain-RGB)
-Le moteur utilise des tuiles MapTiler Terrain-RGB v2.
-- **Formule de décodage** : 
-  `Height (m) = -10000 + ((R * 256^2 + G * 256 + B) * 0.1)`
-- **Interpolation** : Utiliser une interpolation bi-linéaire sur les pixels adjacents pour une fluidité à 60 FPS lors du suivi GPS.
+### A. Précision 64-bit (Saut Quantique)
+Contrairement à la version Web limitée au 32-bit (provoquant des tremblements à grande distance), SunTrail Unity utilise le système de coordonnées ECEF (Earth-Centered, Earth-Fixed) en `double` via Cesium. 
+- **Règle** : Toutes les coordonnées GPS sont manipulées en `double` avant d'être converties en coordonnées Unity locales relatives à la caméra.
 
-### B. Sonde Solaire (Analyse d'Horizon)
-Calcul de l'ensoleillement cumulé sur un point (Ray-marching).
-1. **Échantillonnage** : 96 pas (toutes les 15 min sur 24h).
-2. **Ray-Marching** :
-   - Origine : `Position du clic (x, y, z)`.
-   - Direction : `Vecteur Soleil (Azimut, Altitude)`.
-   - Pas de marche : 300m.
-   - Distance max : 40km (suffisant pour masquer l'horizon montagneux).
-   - Condition d'ombre : Si `Altitude_Terrain(Rayon_P) > Hauteur_Rayon(Rayon_P)`.
+### B. Architecture Réactive
+L'État Global (`StateSo.cs`) est la source de vérité. Les composants s'abonnent aux changements pour éviter les calculs inutiles chaque frame.
 
-### C. Shader d'Inclinomètre (Calcul de Pente)
-Calculé dans le fragment shader pour une performance maximale.
-- **Normale de surface** : Calculée par différence finie entre 4 échantillons de hauteur (L/R/U/D).
-- **Angle de pente** : `slopeRad = acos(dot(Normal, UpVector))`.
-- **Seuils de couleur (Sécurité Avalanche)** :
+---
+
+## 2. Algorithmes Critiques
+
+### A. Inclinomètre (Calcul de Pente)
+Le calcul se fait directement dans le Shader Graph pour une performance GPU maximale.
+- **Formule** : `slope = acos(dot(WorldNormal, WorldUp))`
+- **Up Vector** : Doit être extrait de la matrice de transformation de Cesium car le "Haut" change selon la position sur la sphère terrestre.
+- **Seuils Alpinistes** :
   - **Jaune** : > 30° (Attention)
   - **Orange** : > 35° (Danger)
-  - **Rouge** : > 40° (Danger critique)
-- **Opacité conseillée** : 55% pour garder la lisibilité de la carte topo.
+  - **Rouge** : > 40° (Danger Critique)
+
+### B. Sun Probe (Analyse d'Horizon)
+Portage optimisé via **C# Job System + Burst**.
+- **Échantillonnage** : 96 pas (toutes les 15 min sur 24h).
+- **Technique** : `Physics.Raycast` ou `Physics.CheckSphere` asynchrone sur le maillage Cesium.
+- **Distance Max** : 40km.
+
+### C. FlyTo Cinématique
+Utilisation de **Cinemachine** avec des courbes de bruit et d'amortissement pour simuler un vol de drone.
+- **Trajectoire** : Parabolique (Auto-Tilt).
+- **Sécurité** : `Anti-Collision Raycast` pour maintenir la caméra au-dessus du sol + 30m.
 
 ---
 
-## 2. Configuration & State
+## 3. Presets de Performance (Unity Standard)
 
-### Paramètres de Performance (Presets)
-- **Eco** : Résolution terrain 2px, Range 3 tuiles, Shadows OFF.
-- **Balanced** : Résolution terrain 64px, Range 4 tuiles, Shadows ON (basse res).
-- **Ultra** : Résolution terrain 256px, Range 8 tuiles, Shadows HQ.
-
-### Logique de Navigation
-- **FlyTo** : Trajectoire parabolique (interpolation `easeInOutCubic`). Altitude cible proportionnelle à la distance parcourue.
-- **GPS Smoothing** : Interpolation linéaire (LERP) des coordonnées à 60 FPS pour compenser le saut des 1Hz du capteur GPS.
+| Preset | Résolution Terrain | Range (LOD) | Ombres | Végétation |
+| :--- | :--- | :--- | :--- | :--- |
+| **Eco** | Low | 3km | Off | Off |
+| **Balanced** | Medium | 6km | Hard | Low |
+| **Performance** | High | 10km | Soft | Med |
+| **Ultra** | Ultra | 20km+ | HQ | High |
 
 ---
 
-## 3. Fonctionnalités Implémentées (V4.6)
-- [x] Moteur de recherche de sommets (Overpass API + Cache local 7j).
-- [x] Boussole stabilisée (Zone morte 1.5°).
-- [x] Profil altimétrique dynamique le long d'une trace.
-- [x] Mode "Deep Sleep" (Stop rendu à 0 FPS si app en arrière-plan).
-- [x] Scraper Offline (Rayon 6km).
-
----
-
-## 4. 🧭 ROADMAP ALPINISTE (TODOs Critiques pour Unity)
-
-### Étape 1 : Sécurité Alpine
-- [ ] **SOS SMS Low-Bandwidth** : Générateur de message (Lat/Lon, Alt, % Bat) pour zones sans data.
-- [ ] **Calcul de pente GPX** : Analyser chaque segment d'une trace importée et colorer le profil altimétrique selon la difficulté.
-
-### Étape 2 : Immersion & Données
-- [ ] **Hydrologie Réelle** : Rendu des lacs/rivières via données OSM (Shaders de réflexion).
-- [ ] **Végétation Bio-Fidèle** : Adaptation des essences d'arbres selon l'altitude (Mélèzes > 1800m, etc.).
-- [ ] **Données Mondiales** : Intégration SRTM/Copernicus via Cesium Ion.
-
-### Étape 3 : Optimisation Native
-- [ ] **Moteur Hybride WebGL/WebGPU** (pour la version Web Unity).
-- [ ] **Textures Compressées (KTX2/Basis)** pour un chargement instantané sur mobile.
-
----
-
-## 5. Recommandations Unity + Cesium
-- **Précision** : Utiliser impérativement `CesiumGeoreference` pour le placement 64-bit.
-- **UI** : Utiliser Unity UI Toolkit pour une interface responsive haute performance.
-- **Shaders** : Porter l'inclinomètre dans Unity Shader Graph pour le support URP (Universal Render Pipeline).
+## 4. Spécificités Mobile (Suisse/Alpinisme)
+- **SOS SMS** : Formatage `Lat: {lat}, Lon: {lon}, Alt: {alt}m, Bat: {bat}%`.
+- **Offline Cache** : Stockage persistant des tuiles dans `Application.persistentDataPath`.
+- **Boussole** : Filtrage par zone morte de 1.5° pour éviter le bruit du magnétomètre.
